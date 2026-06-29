@@ -30,14 +30,28 @@ Opens at http://localhost:8501.
 
 ### Module 1 — Morning Markets Dashboard
 
-The daily-habit anchor. Pulls the cross-asset board a trader watches every morning,
-grouped the way a desk thinks about it:
+The daily-habit anchor. Three views:
+
+**📊 Dashboard** — the cross-asset board a trader watches every morning, grouped the way
+a desk thinks about it, plus a market open/closed badge, a catalyst strip, and a
+rule-based "what moved & the pattern" read.
 
 - **📈 Equities** — S&P 500, Nasdaq, Dow, Russell 2000 (risk-on/off, breadth)
 - **💵 Rates** — 13wk bill, 5Y, 10Y, 30Y yields (moves shown in **basis points**)
 - **💱 FX** — Dollar Index, EUR/USD, USD/JPY, GBP/USD
 - **🛢️ Commodities** — WTI, Brent, Gold, Silver, Nat Gas, Copper
 - **😨 Volatility** — VIX
+- Each block expands to a **30-day sparkline** + **52-week range** position.
+
+**🎯 Predict** — *predict-before-you-peek.* Call the direction of the headline movers
+**before** you see them, then reveal, score, and read the pattern. Turns passive
+watching into active reasoning reps.
+
+**📈 My Stats** — your **streak** and **directional hit-rate** over time. Show up daily;
+the recruiting line writes itself ("called markets every morning for X months").
+
+**🗓️ Catalyst awareness** — every view shows what's coming (CPI, NFP, FOMC) so you learn
+what moves markets and when.
 
 **Honest data notes:**
 - Free Yahoo quotes are ~15 min delayed; the daily move = latest session vs prior close.
