@@ -21,6 +21,7 @@ from markets_data import get_market_board, flatten, PREDICT_SET
 from commentary import market_read
 from catalysts import upcoming
 from journal import score_predictions, log_session, summary_stats
+from lessons import todays_lessons, concept_of_the_day
 
 
 st.set_page_config(page_title="S&T Cockpit", page_icon="📊", layout="wide")
@@ -53,6 +54,28 @@ def fmt_move(row):
 
 
 GROUP_ICONS = {"Equities": "📈", "Rates": "💵", "FX": "💱", "Commodities": "🛢️", "Volatility": "😨"}
+
+
+# ===========================================================================
+# LEARN — the teaching layer. Turns today's real tape into cause→effect lessons.
+# This is the bridge from "guessing" to a reasoned view: learn WHY assets move
+# together, and tomorrow your read isn't a guess.
+# ===========================================================================
+def render_learn(board):
+    st.markdown("#### 🎓 Why it moved — learn the linkages")
+    lessons = todays_lessons(board)
+    if lessons:
+        st.caption("These cause→effect relationships are showing up in *today's* tape. "
+                   "Read the WHY — after a few weeks these become intuition and your "
+                   "morning call stops being a guess.")
+        for L in lessons:
+            with st.expander(f"📎 {L['name']}"):
+                st.markdown(L["explanation"])
+    else:
+        st.caption("No clean textbook linkage firing today — quiet or mixed tape. "
+                   "Not every day has a tidy story, and noticing that is its own lesson.")
+    term, definition = concept_of_the_day()
+    st.info(f"**🧠 Concept of the day — {term}:** {definition}")
 
 
 # --- shared header ---------------------------------------------------------
@@ -108,6 +131,9 @@ def render_dashboard():
     st.markdown("\n".join(f"- {b}" for b in read["bullets"]))
     st.caption("Rule-based read — it describes *what* moved & the pattern, not *why*. "
                "The true 'why' (news/catalyst) is the AI layer coming in Module 2.")
+    st.divider()
+
+    render_learn(board)   # ← learn the cause→effect linkages behind today's tape
     st.divider()
 
     # --- the board: colored glance tiles + a depth expander per group -----
@@ -236,6 +262,9 @@ def render_predict():
     st.markdown("**The real question:** did your *reasoning* hold up — or did you get the "
                 "direction right for the wrong reason? Compare your read to the pattern above. "
                 "That gap is what sharpens your mental model.")
+
+    st.divider()
+    render_learn(board)   # ← the actual teaching: WHY today's moves happened
 
     st.success("Logged to your streak. Come back tomorrow.")
     if st.button("🔄 New round"):
