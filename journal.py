@@ -18,7 +18,7 @@ import os
 from datetime import date, timedelta
 
 LOG_PATH = os.path.join(os.path.dirname(__file__), "predictions_log.csv")
-FIELDS = ["date", "correct", "total", "picks"]
+FIELDS = ["date", "correct", "total", "picks", "note"]
 
 
 def score_predictions(picks, board_flat):
@@ -49,8 +49,9 @@ def score_predictions(picks, board_flat):
     return {"correct": correct, "total": len(details), "details": details}
 
 
-def log_session(result, today=None):
-    """Append (or replace) today's scored session in the CSV. One session per day."""
+def log_session(result, note="", today=None):
+    """Append (or replace) today's scored session in the CSV. One session per day.
+    `note` = your written morning read, saved so you can review your past thinking."""
     today = (today or date.today()).isoformat()
     rows = _read_all()
     rows = [r for r in rows if r["date"] != today]   # replace today's if re-run
@@ -59,6 +60,7 @@ def log_session(result, today=None):
         "correct": result["correct"],
         "total": result["total"],
         "picks": json.dumps({d["symbol"]: d["guess"] for d in result["details"]}),
+        "note": note,
     })
     rows.sort(key=lambda r: r["date"])
     with open(LOG_PATH, "w", newline="", encoding="utf-8") as fh:
@@ -81,7 +83,8 @@ def load_history():
         try:
             out.append({"date": r["date"],
                         "correct": int(r["correct"]),
-                        "total": int(r["total"])})
+                        "total": int(r["total"]),
+                        "note": r.get("note", "")})
         except (ValueError, KeyError):
             continue
     return sorted(out, key=lambda r: r["date"])

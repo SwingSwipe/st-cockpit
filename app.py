@@ -70,9 +70,11 @@ with hcol3:
         st.cache_data.clear()
         st.rerun()
 
+# Predict is FIRST and the default landing tab — so you make your calls before you
+# ever see the board. Peeking first defeats the whole exercise.
 view = st.segmented_control(
-    "view", options=["📊 Dashboard", "🎯 Predict", "📈 My Stats"],
-    default="📊 Dashboard", label_visibility="collapsed",
+    "view", options=["🎯 Predict", "📊 Dashboard", "📈 My Stats"],
+    default="🎯 Predict", label_visibility="collapsed",
 )
 
 
@@ -168,10 +170,14 @@ def render_predict():
     bflat = flatten(board)
 
     st.subheader("🎯 Predict before you peek")
-    st.caption("Call the **direction** of today's headline movers *before* you see them. "
-               "This is the rep that turns watching into reasoning.")
+    st.caption("Call the **direction** of today's headline movers *before* you see them — "
+               "and write **why**. The direction is the guess; the *reason* is the learning.")
 
     if not st.session_state.get("predict_revealed"):
+        st.info("💡 **Reason from what you can see, don't coin-flip:** the catalysts above "
+                "(is a big report due?), what's moved overnight in oil/FX/Asia, and yesterday's "
+                "tone. A wrong call with real logic teaches you more than a lucky guess.")
+
         st.markdown("**Up or Down today?** (vs the prior close)")
         picks = {}
         cols = st.columns(len(PREDICT_SET))
@@ -179,18 +185,30 @@ def render_predict():
             with col:
                 picks[symbol] = st.radio(label, ["Up", "Down"], index=None, key=f"pick_{symbol}")
 
-        ready = all(v is not None for v in picks.values())
+        note = st.text_area(
+            "📝 Your read — why? What's your thesis for the day?",
+            placeholder="e.g. Stocks up / dollar down — risk-on into a quiet data day. Oil bid on "
+                        "overnight strength. 10Y flat, no catalyst until Friday's jobs report.",
+            key="predict_note",
+        )
+
+        picks_ready = all(v is not None for v in picks.values())
+        note_ready = bool(note and note.strip())
+        ready = picks_ready and note_ready
         if st.button("👀 Reveal & score", type="primary", disabled=not ready):
             result = score_predictions(picks, bflat)
-            log_session(result)                       # persist the scored session
+            log_session(result, note=note.strip())    # persist the session + your reasoning
             st.session_state["predict_result"] = result
+            st.session_state["predict_note_saved"] = note.strip()
             st.session_state["predict_revealed"] = True
             st.rerun()
-        if not ready:
-            st.caption("Pick a direction for every instrument to reveal.")
+        if not picks_ready:
+            st.caption("Pick a direction for every instrument…")
+        elif not note_ready:
+            st.caption("…and write your one-line read to reveal. (The reasoning is the point.)")
         return
 
-    # --- revealed: show the score + the truth ----------------------------
+    # --- revealed: score, truth, and the compare-your-logic step ----------
     result = st.session_state["predict_result"]
     c, t = result["correct"], result["total"]
     pct = (c / t * 100) if t else 0
@@ -205,15 +223,25 @@ def render_predict():
     } for d in result["details"]]
     st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
 
-    # Now teach: show the pattern read so he learns WHY his calls were right/wrong.
+    # Your reasoning vs the desk's reasoning — this side-by-side IS the learning.
     read = market_read(board)
-    st.markdown(f"**Pattern read — {read['headline']}**")
-    st.markdown("\n".join(f"- {b}" for b in read["bullets"]))
+    rcol, dcol = st.columns(2)
+    with rcol:
+        st.markdown("**📝 Your read this morning**")
+        st.info(st.session_state.get("predict_note_saved", "—"))
+    with dcol:
+        st.markdown(f"**🖥️ The pattern — {read['headline']}**")
+        st.markdown("\n".join(f"- {b}" for b in read["bullets"]))
+
+    st.markdown("**The real question:** did your *reasoning* hold up — or did you get the "
+                "direction right for the wrong reason? Compare your read to the pattern above. "
+                "That gap is what sharpens your mental model.")
 
     st.success("Logged to your streak. Come back tomorrow.")
     if st.button("🔄 New round"):
         for symbol, _ in PREDICT_SET:
             st.session_state.pop(f"pick_{symbol}", None)
+        st.session_state.pop("predict_note", None)
         st.session_state["predict_revealed"] = False
         st.rerun()
 
@@ -240,11 +268,17 @@ def render_stats():
         if len(df) >= 2:
             st.markdown("**Accuracy over time**")
             st.line_chart(df["accuracy"], y_label="% correct")
-        st.markdown("**History**")
+        st.markdown("**History** — your past calls and the read you wrote each morning")
+        hist_cols = ["date", "correct", "total", "accuracy"]
+        if "note" in df.columns:
+            hist_cols.append("note")
         st.dataframe(
-            df.reset_index()[["date", "correct", "total", "accuracy"]],
+            df.reset_index()[hist_cols],
             hide_index=True, use_container_width=True,
-            column_config={"accuracy": st.column_config.NumberColumn("accuracy", format="%.0f%%")},
+            column_config={
+                "accuracy": st.column_config.NumberColumn("accuracy", format="%.0f%%"),
+                "note": st.column_config.TextColumn("your read", width="large"),
+            },
         )
     else:
         st.info("No sessions yet — head to the **🎯 Predict** tab and make your first calls. "
