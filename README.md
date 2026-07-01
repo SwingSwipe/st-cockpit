@@ -9,6 +9,10 @@ Built with Python · [yfinance](https://github.com/ranaroussi/yfinance) (free da
 
 ## Run it
 
+**Windows one-click:** double-click **`start.bat`** — it opens the app in your browser.
+Keep that window open while you use it; close it to stop the app.
+
+**Or from a terminal:**
 ```bash
 pip install -r requirements.txt
 python -m streamlit run app.py
